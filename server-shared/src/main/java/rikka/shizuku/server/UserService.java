@@ -69,16 +69,23 @@ public class UserService {
                             ? UserHandleHidden.of(userId)
                             : new UserHandleHidden(userId));
             Context context = Refine.<ContextHidden>unsafeCast(systemContext).createPackageContextAsUser(pkg, Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY, userHandle);
-            Field mPackageInfo = context.getClass().getDeclaredField("mPackageInfo");
-            mPackageInfo.setAccessible(true);
-            Object loadedApk = mPackageInfo.get(context);
-            Method makeApplication = loadedApk.getClass().getDeclaredMethod("makeApplication", boolean.class, Instrumentation.class);
-            Application application = (Application) makeApplication.invoke(loadedApk, true, null);
-            Field mInitialApplication = activityThread.getClass().getDeclaredField("mInitialApplication");
-            mInitialApplication.setAccessible(true);
-            mInitialApplication.set(activityThread, application);
 
-            ClassLoader classLoader = application.getClassLoader();
+            Context appContext = context;
+            try {
+                Field mPackageInfo = context.getClass().getDeclaredField("mPackageInfo");
+                mPackageInfo.setAccessible(true);
+                Object loadedApk = mPackageInfo.get(context);
+                Method makeApplication = loadedApk.getClass().getDeclaredMethod("makeApplication", boolean.class, Instrumentation.class);
+                Application application = (Application) makeApplication.invoke(loadedApk, true, null);
+                Field mInitialApplication = activityThread.getClass().getDeclaredField("mInitialApplication");
+                mInitialApplication.setAccessible(true);
+                mInitialApplication.set(activityThread, application);
+                appContext = application;
+            } catch (Throwable tr) {
+                Log.w(TAG, "makeApplication() failed, falling back to package context", tr);
+            }
+
+            ClassLoader classLoader = appContext.getClassLoader();
             Class<?> serviceClass = classLoader.loadClass(cls);
             Constructor<?> constructorWithContext = null;
             try {
@@ -86,7 +93,7 @@ public class UserService {
             } catch (NoSuchMethodException | SecurityException ignored) {
             }
             if (constructorWithContext != null) {
-                service = (IBinder) constructorWithContext.newInstance(application);
+                service = (IBinder) constructorWithContext.newInstance(appContext);
             } else {
                 service = (IBinder) serviceClass.newInstance();
             }
