@@ -1,6 +1,6 @@
 [versions]
 agp = "9.2.1"
-hidden-api = "4.3.3"
+hidden-api = "4.4.0"
 refine = "4.4.0"
 
 [libraries]
