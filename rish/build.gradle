@@ -34,8 +34,8 @@ android {
 dependencies {
     implementation project(':api')
 
-    implementation 'androidx.annotation:annotation:1.10.0'
-    implementation 'org.lsposed.libcxx:libcxx:29.0.14206865'
+    implementation 'androidx.annotation:annotation:1.11.0'
+    implementation 'org.lsposed.libcxx:libcxx:30.0.16248370'
 }
 
 ext {
